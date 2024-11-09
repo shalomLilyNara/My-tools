@@ -1,7 +1,6 @@
-import os
 import sys
 from pathlib import Path
-from typing import Optional
+import re
 
 def rename_files(
     folder_path: str,
@@ -29,32 +28,55 @@ def rename_files(
     
     renamed_count = 0
     errors = []
+    regex = r"\d{2}"
+    i = 1
 
     # Get all files and sort them.
     files = [f for f in folder_path.iterdir() if f.is_file()]
     files.sort()
+   
+    for file_path in files:
+        # Check if the filename matches the regex
+        match = re.findall(regex, str(file_path))
 
-    for i, file_path in enumerate(files, 1):
-        try:
-            new_filename = f"{new_name} vol{i}{file_path.suffix}"
-            new_path = folder_path / new_filename
-        
+        if match:
+            try:
+                new_filename = f"{new_name} vol{match[0]}{file_path.suffix}"
+                new_path = folder_path / new_filename
+
+                if not dry_run:
+                    file_path.rename(new_path)
+                    print(f"Renamed: {file_path.name} → {new_filename}")
+                else:
+                    print(f"Would rename: {file_path.name} → {new_filename}")
+                renamed_count += 1
+
+            except PermissionError:
+                errors.append(f"Permission denied: {file_path}")
+            except Exception as e:
+                errors.append(f"Error processing {file_path}: {str(e)}")
+
+        else:
+            try:
+                new_filename = f"{new_name} vol{i:02}{file_path.suffix}"
+                new_path = folder_path / new_filename
+
             # Check if target file already exists
-            if new_path.exists() and file_path != new_path:
-                errors.append(f"Cannot rename: {new_filename} already exists")
+                if new_path.exists() and file_path != new_path:
+                    errors.append(f"Cannot rename: {new_filename} already exists")
 
-            if not dry_run:
-                file_path.rename(new_path)
-                print(f"Renamed: {file_path.name} → {new_filename}")
-            else:
-                print(f"Would rename: {file_path.name} → {new_filename}")
-            
-            renamed_count += 1
+                if not dry_run:
+                    file_path.rename(new_path)
+                    print(f"Renamed: {file_path.name} → {new_filename}")
+                else:
+                    print(f"Would rename: {file_path.name} → {new_filename}")
+                
+                renamed_count += 1
 
-        except PermissionError:
-            errors.append(f"Permission denied: {file_path}")
-        except Exception as e:
-            errors.append(f"Error processing {file_path}: {str(e)}")
+            except PermissionError:
+                errors.append(f"Permission denied: {file_path}")
+            except Exception as e:
+                errors.append(f"Error processing {file_path}: {str(e)}")
 
     return renamed_count, errors
 
@@ -73,7 +95,6 @@ def parse_args():
         help="Show what would be renamed without making changes"
     )
     
-    # It's a method, not a function. Just same name.
     return parser.parse_args()
 
 
