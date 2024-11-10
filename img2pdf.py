@@ -50,7 +50,7 @@ def jpg_to_pdf(
             imgs.sort()
             
             if imgs:  # Only create PDF if there are images
-                output_file = output_path / f"{pdf_name}_vol_{match[0]}.pdf"
+                output_file = output_path / f"{pdf_name}_{match[0]}.pdf"
                 with open(output_file, "wb") as f:  # Open in binary write mode
                     f.write(img2pdf.convert(imgs))
 
